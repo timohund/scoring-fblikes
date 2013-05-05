@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin id="facebookScore" name="Changes score based on facebook likes"
+        version="1.0.0" provider-name="Timo Schmidt">
+
+    <runtime>
+        <library name="facebookLikes.jar">
+            <export name="*"/>
+        </library>
+    </runtime>
+
+
+    <extension id="org.apache.nutch.scoring.facebook"
+               name="FacebookScoring"
+               point="org.apache.nutch.scoring.ScoringFilter">
+
+        <implementation id="org.apache.nutch.scoring.facebook.LikesScoringFilter"
+                        class="org.apache.nutch.scoring.facebook.LikesScoringFilter" />
+    </extension>
+</plugin>
