@@ -5,22 +5,12 @@
 
 <configuration>
     <property>
-        <name>db.score.facebook.appId</name>
+        <name>db.score.facebook.appKey</name>
         <value></value>
         <description></description>
     </property>
     <property>
         <name>db.score.facebook.appSecret</name>
-        <value></value>
-        <description></description>
-    </property>
-    <property>
-        <name>db.score.facebook.commaSeparatedPermissions</name>
-        <value></value>
-        <description></description>
-    </property>
-    <property>
-        <name>db.score.facebook.accessToken</name>
         <value></value>
         <description></description>
     </property>

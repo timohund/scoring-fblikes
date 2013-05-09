@@ -1,7 +1,5 @@
 package org.apache.nutch.scoring.facebook;
 
-import facebook4j.*;
-import facebook4j.auth.AccessToken;
 import org.apache.avro.util.Utf8;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.nutch.indexer.NutchDocument;
@@ -18,8 +16,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+
+
 /**
+ * This scoring filter is attaching the amount of facebook
+ * likes to a document.
  *
+ * @author Timo Schmidt <timo-schmidt@gmx.net>
  */
 public class LikesScoringFilter implements ScoringFilter {
 
@@ -29,7 +32,7 @@ public class LikesScoringFilter implements ScoringFilter {
 
     private Configuration conf;
 
-    private Facebook facebook;
+    private LikesService likesService;
 
     static {
         FIELDS.add(WebPage.Field.METADATA);
@@ -42,24 +45,20 @@ public class LikesScoringFilter implements ScoringFilter {
 
     public void setConf(Configuration conf) {
         this.conf = conf;
-        if(this.facebook == null) {
-            String appId        = conf.get("db.score.facebook.appId");
+        if(this.likesService == null) {
+            String appKey       = conf.get("db.score.facebook.appKey");
             String appSecret    = conf.get("db.score.facebook.appSecret");
-            String permissions  = conf.get("db.score.facebook.commaSeparatedPermissions");
-            String accessToken  = conf.get("db.score.facebook.accessToken");
-
-            facebook = new FacebookFactory().getInstance();
-            facebook.setOAuthAppId(appId, appSecret);
-            facebook.setOAuthPermissions(permissions);
-            facebook.setOAuthAccessToken(new AccessToken(accessToken, null));
+            this.likesService   = new LikesService(appKey,appSecret);
         }
     }
 
     @Override
-    public void injectedScore(String s, org.apache.nutch.storage.WebPage webPage) throws ScoringFilterException {}
+    public void injectedScore(String s, org.apache.nutch.storage.WebPage webPage) throws ScoringFilterException {
+    }
 
     @Override
-    public void initialScore(String s, org.apache.nutch.storage.WebPage webPage) throws ScoringFilterException {}
+    public void initialScore(String s, org.apache.nutch.storage.WebPage webPage) throws ScoringFilterException {
+    }
 
     @Override
     public float generatorSortValue(String s, org.apache.nutch.storage.WebPage webPage, float v) throws ScoringFilterException {
@@ -67,21 +66,24 @@ public class LikesScoringFilter implements ScoringFilter {
     }
 
     @Override
-    public void distributeScoreToOutlinks(String s, org.apache.nutch.storage.WebPage webPage, Collection<ScoreDatum> scoreDatums, int i) throws ScoringFilterException {}
+    public void distributeScoreToOutlinks(String s, org.apache.nutch.storage.WebPage webPage, Collection<ScoreDatum> scoreDatums, int i) throws ScoringFilterException {
+    }
 
     @Override
-    public void updateScore(String s, org.apache.nutch.storage.WebPage webPage, List<ScoreDatum> scoreDatums) throws ScoringFilterException {
-        float oldScore = webPage.getScore();
-        String url = webPage.getReprUrl().toString();
+    public void updateScore(String url, org.apache.nutch.storage.WebPage webPage, List<ScoreDatum> scoreDatums) throws ScoringFilterException {
         try {
-            ResponseList<Like> likes = facebook.getLinkLikes(url);
+            float oldScore = webPage.getScore();
+            LikesResult likes = likesService.getLikes(url);
             ByteBuffer b = ByteBuffer.allocate(4);
-            b.putInt(likes.size());
-
-            LOG.info("Determined "+likes.size()+" likes for document with url "+url);
-            webPage.putToMetadata(new Utf8("fb_likes"),b);
-        } catch (FacebookException e) {
-            e.printStackTrace();
+            int likeCount = likes.getLikeCount();
+            b.putInt(likeCount);
+            LOG.info("Current score is "+oldScore);
+            LOG.info("Determined " + likeCount + " likes for document with url " + url);
+            webPage.putToMetadata(new Utf8("fb_likes"), b);
+        } catch (UnexpectedLikeResultException e) {
+            LOG.info("Likes service did not retrieve single like result for "+url);
+        } catch (Exception e) {
+            LOG.info("Error during score update " + e.getMessage());
         }
     }
 
